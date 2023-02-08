@@ -10,17 +10,18 @@ class iblock_element extends Model
 {
     use HasFactory;
 
+
+    protected $casts = [
+        'properties' => 'array'
+    ];
+
     public function iblock()
     {
         return $this->belongsTo(iblock::class);
     }
 
-    public function propvalue()
-    {
-        return $this->hasMany(iblock_prop_value::class, "el_id");
-    }
 
-    public function properties()
+    public function property()
     {
         return $this->belongsToMany(iblock_property::class);
     }
@@ -32,5 +33,3 @@ class iblock_element extends Model
 
 
 }
-
-

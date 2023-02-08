@@ -24,7 +24,7 @@
             </ul>
             <div class="tab-content" id="pills-tabContent">
                 <div class="tab-pane fade show active" id="pills-home" role="tabpanel" aria-labelledby="pills-home-tab">
-                    @foreach($iblock->getPropWithParrents(true) as $prop)
+                    @foreach($iblock->getPropWithParents(true) as $prop)
                         @if($prop->iblock_id != 1)
                             <div class="form-group">
                                 <label>{{$prop->name}}</label>
@@ -50,7 +50,7 @@
                     @endforeach
                 </div>
                 <div class="tab-pane fade" id="pills-profile" role="tabpanel" aria-labelledby="pills-profile-tab">
-                    @foreach($iblock->getPropWithParrents(true) as $prop)
+                    @foreach($iblock->getPropWithParents(true) as $prop)
                         @if($prop->iblock_id == 1)
                             <div class="form-group">
                                 <label>{{$prop->name}}</label>

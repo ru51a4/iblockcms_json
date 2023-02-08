@@ -47,20 +47,21 @@ class Iblocks
     public static function getAllProps($iblock, $values = false)
     {
         $res = [];
-        foreach (self::getPropsParents(iblock::find($iblock)) as $c) {
+        $iblock = iblock::find($iblock);
+        $childs = $iblock->getParents()->map(function ($iblock) {
+            return $iblock->id;
+        });
+        foreach (self::getPropsParents($iblock) as $c) {
             $res[] = $c;
         }
         if ($values) {
             $allProps = $res;
-            $cAllProps = array_map(function ($item) {
-                return $item->id;
-            }, $allProps);
             $allPropValue = [];
-            if (!empty($cAllProps)) {
-                foreach ($cAllProps as $id) {
-                    $c = iblock_prop_value::where("prop_id", "=", $id)->groupBy("value")->get();
-                    foreach ($c as $item) {
-                        $allPropValue[$item->prop_id][] = $item;
+            if (!empty($allProps)) {
+                foreach ($allProps as $prop) {
+                    $els = iblock_element::whereIn("iblock_id", $childs)->where("properties->" . \Str::slug($prop->name) . "->value", "!=", "fuck")->groupBy("properties->" . \Str::slug($prop->name) . "->value")->get();
+                    foreach ($els as $el) {
+                        $allPropValue[$prop->id][] = $el->properties[\Str::slug($prop->name)];
                     }
                 }
             }
@@ -102,46 +103,28 @@ class Iblocks
         $ids = iblock::find($iblockID)->getChilds()->map(function ($iblock) {
             return $iblock->id;
         });
-        $els = iblock_element::with("propvalue.prop")->whereIn("iblock_id", $ids);
+        $els = iblock_element::whereIn("iblock_id", $ids);
         if ($page) {
             $els = $els->where("name", "!=", "op");
         }
         if ($where) {
             foreach ($where as $cond) {
-                $els->whereHas('propvalue', function ($query) use ($cond) {
-                    $cProp = iblock_property::where("name", "=", $cond["prop"])->first();
-                    $query->where('prop_id', '=', $cProp->id)->where(function ($query) use ($cProp, $cond) {
-                        $type = ($cProp->is_number) ? "value_number" : "value";
-                        $query->where($type, $cond["type"], $cond["value"]);
-                    });
-                });
+                $els->where('properties->key', '=', $cond["prop"])
+                    ->where("properties->value", $cond["type"], $cond["value"]);
             }
         }
+
         if (isset($params["param"])) {
             foreach ($params["param"] as $id => $param) {
-                $els->whereHas('propvalue', function ($query) use ($id, $param) {
-                    $query->where("prop_id", "=", $id)->where(function ($query) use ($param) {
-                        $param = array_map(function ($id) {
-                            return iblock_prop_value::find($id)->value;
-                        }, $param);
-                        $query->where("value", '=', $param[0]);
-                        for ($i = 1; $i <= count($param) - 1; $i++) {
-                            $query->orWhere("value", '=', $param[$i]);
-                        }
-                    });
+                $els->where(function ($query) use ($param, $id) {
+                    $query->where("properties->" . $id . "->slug", "=", $param[0]);
+                    for ($i = 1; $i <= count($param) - 1; $i++) {
+                        $query->orWhere("properties->" . $id . "->slug", '=', $param[$i]);
+                    }
                 });
             }
         }
-        if (isset($params["range"])) {
-            foreach ($params["range"] as $id => $param) {
-                $els->whereHas('propvalue', function ($query) use ($id, $param) {
-                    $query->where("prop_id", "=", $id)->where(function ($query) use ($param) {
-                        $query->where("value_number", '>=', $param["from"]);
-                        $query->where("value_number", '<=', $param["to"]);
-                    });
-                });
-            }
-        }
+        
         $count = $els->count();
         if ($page) {
             $els = $els->offset($itemPerPage * ($page - 1))->take($itemPerPage);
@@ -150,20 +133,21 @@ class Iblocks
         foreach ($els as $el) {
             $t = $el->toArray();
             $t["prop"] = [];
-            foreach ($el["propvalue"] as $prop) {
-                $type = ($prop["prop"]["is_number"]) ? "value_number" : "value";
-                if (isset($t["prop"][$prop["prop"]["name"]])) {
-                    if (is_array($t["prop"][$prop["prop"]["name"]])) {
-                        $t["prop"][$prop["prop"]["name"]][] = $prop[$type];
+            foreach (($el["properties"]) as $key => $item) {
+                $key = $item["prop_name"];
+                $item = $item["value"];
+                if (isset($t["prop"][$key])) {
+                    if (is_array($t["prop"][$key])) {
+                        $t["prop"][$key][] = $item;
                     } else {
-                        $t["prop"][$prop["prop"]["name"]] = [$t["prop"][$prop["prop"]["name"]]];
-                        $t["prop"][$prop["prop"]["name"]][] = $prop[$type];
+                        $t["prop"][$key] = [$t["prop"][$key]];
+                        $t["prop"][$key][] = $item;
                     }
                 } else {
-                    $t["prop"][$prop["prop"]["name"]] = $prop[$type];
+                    $t["prop"][$key] = $item;
                 }
             }
-            unset($t["propvalue"]);
+            unset($t["properties"]);
             $res[] = $t;
         }
         return ["count" => $count, "res" => $res];
@@ -178,12 +162,20 @@ class Iblocks
         $sectionTree = $iblock->getChilds();
         $getChilds = function ($iblock, &$c) use (&$getChilds, &$stack, &$sectionTree) {
             $c[$iblock->id]["key"] = $iblock->name;
-            $c[$iblock->id]["path"] = array_map(function ($item) {
-                return $item->id;
-            }, $stack);
-            $c[$iblock->id]["slug"] = array_map(function ($item) {
-                return $item->slug;
-            }, array_slice($stack, 1));
+            $c[$iblock->id]["path"] = array_map(
+                function ($item) {
+                    return $item->id;
+                }
+                ,
+                $stack
+            );
+            $c[$iblock->id]["slug"] = array_map(
+                function ($item) {
+                    return $item->slug;
+                }
+                ,
+                array_slice($stack, 1)
+            );
             //
             $childs = $sectionTree->where("parent_id", "=", $iblock->id)->all();
             foreach ($childs as $child) {
@@ -199,25 +191,26 @@ class Iblocks
 
     public static function ElementsGetList($ids)
     {
-        $els = iblock_element::with("propvalue.prop")->whereIn('id', $ids)->get();
+        $els = iblock_element::whereIn('id', $ids)->get();
         $res = [];
         foreach ($els as $el) {
             $t = $el->toArray();
             $t["prop"] = [];
-            foreach ($el["propvalue"] as $prop) {
-                $type = ($prop["prop"]["is_number"]) ? "value_number" : "value";
-                if (isset($t["prop"][$prop["prop"]["name"]])) {
-                    if (is_array($t["prop"][$prop["prop"]["name"]])) {
-                        $t["prop"][$prop["prop"]["name"]][] = $prop[$type];
+            foreach (($el["properties"]) as $key => $item) {
+                $key = $item["prop_name"];
+                $item = $item["value"];
+                if (isset($t["prop"][$key])) {
+                    if (is_array($t["prop"][$key])) {
+                        $t["prop"][$key][] = $item;
                     } else {
-                        $t["prop"][$prop["prop"]["name"]] = [$t["prop"][$prop["prop"]["name"]]];
-                        $t["prop"][$prop["prop"]["name"]][] = $prop[$type];
+                        $t["prop"][$key] = [$t["prop"][$key]];
+                        $t["prop"][$key][] = $item;
                     }
                 } else {
-                    $t["prop"][$prop["prop"]["name"]] = $prop[$type];
+                    $t["prop"][$key] = $item;
                 }
             }
-            unset($t["propvalue"]);
+            unset($t["properties"]);
             $res[] = $t;
         }
         return $res;
@@ -236,7 +229,7 @@ class Iblocks
         $el->name = $obj["name"];
         $el->slug = \Str::slug($obj["name"]);
         $el->iblock_id = $iblockId;
-        $el->save();
+        $el->properties = [];
         foreach ($obj["prop"] as $id => $prop) {
             if (empty($prop)) {
                 continue;
@@ -264,41 +257,29 @@ class Iblocks
                 $prop->is_multy = $isMulty;
                 $prop->is_number = $isNumber;
                 $prop->save();
-            } else {
-                iblock_prop_value::where("el_id", "=", $el->id)->where("prop_id", "=", $prop->id)->delete();
             }
-            $count = 0;
-            $p = new iblock_prop_value();
-            $p->prop_id = $prop->id;
-            $p->el_id = $el->id;
-            $p->value_id = ++$count;
             //multy shit
             if (is_array($obj["prop"][$id])) {
-                $count = 0;
+                $properties = [];
                 foreach ($obj["prop"][$id] as $item) {
-                    $p = new iblock_prop_value();
-                    $p->prop_id = $prop->id;
-                    $p->el_id = $el->id;
-                    $p->value_id = ++$count;
-                    $p->slug = \Str::slug($prop->name."-".$item);
-                    if ($prop->is_number) {
-                        $p->value_number = (integer)$item;
-                    } else {
-                        $p->value = $item;
-                    }
-                    $p->save();
+                    $properties[$prop->slug][] = $item;
                 }
+                $pp = ($el->properties);
+                foreach ($pp as $key => $item) {
+                    $properties[$key] = $item;
+                }
+                $el->properties = ($properties);
             } else {
-                //
-                $p->slug = \Str::slug($prop->name."-".$obj["prop"][$id]);
-                if ($prop->is_number) {
-                    $p->value_number = (integer)$obj["prop"][$id];
-                } else {
-                    $p->value = $obj["prop"][$id];
+                $properties[\Str::slug($prop->name)] = ["prop_name" => $prop->name, "prop" => $prop->id, "value" => $obj["prop"][$id], "slug" => \Str::slug($prop->name) . "_" . \Str::slug($obj["prop"][$id])];
+                $pp = ($el->properties);
+                foreach ($pp as $key => $item) {
+                    $properties[$key] = $item;
                 }
-                $p->save();
+                $el->properties = ($properties);
             }
         }
+
+        $el->save();
     }
 
     public static function addSection($obj, $parentId)
@@ -330,10 +311,10 @@ class Iblocks
                         $c = new iblock_prop_value();
                         $c->el_id = $elId;
                         $c->prop_id = $p->id;
-                        $c->slug = \Str::slug($p->name."-".$item);
+                        $c->slug = \Str::slug($p->name . "-" . $item);
                         $c->value_id = ++$count;
                         if ($p->is_number) {
-                            $c->value_number = (integer)$item;
+                            $c->value_number = (integer) $item;
                         } else {
                             $c->value = $item;
                         }
@@ -344,10 +325,10 @@ class Iblocks
                     $c = new iblock_prop_value();
                     $c->el_id = $elId;
                     $c->prop_id = $p->id;
-                    $c->slug = \Str::slug($p->name."-".$item);
+                    $c->slug = \Str::slug($p->name . "-" . $item);
                     $c->value_id = ++$count;
                     if ($p->is_number) {
-                        $c->value_number = (integer)$props[$p->name];
+                        $c->value_number = (integer) $props[$p->name];
                     } else {
                         $c->value = $props[$p->name];
                     }

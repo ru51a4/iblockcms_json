@@ -11,7 +11,7 @@
 
             <div class="form-group">
                 <label>родитель</label>
-                <select name="parrent_id">
+                <select name="parent_id">
                     <option value="0">-</option>
                 @foreach($iblocks as $iblock)
                         <option value="{{$iblock->id}}">{{$iblock->name}}</option>

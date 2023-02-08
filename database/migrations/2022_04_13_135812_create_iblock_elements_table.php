@@ -22,6 +22,7 @@ class CreateIblockElementsTable extends Migration
                 ->references('id')->on('iblocks')
                 ->onDelete('cascade');
             $table->string('name');
+            $table->json('properties');
 
         });
     }

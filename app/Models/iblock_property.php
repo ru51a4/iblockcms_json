@@ -15,10 +15,6 @@ class iblock_property extends Model
         return $this->belongsTo("App\Models\iblock");
     }
 
-    public function propvalue()
-    {
-        return $this->hasMany(iblock_prop_value::class, "prop_id");
-    }
 
     public function elements()
     {

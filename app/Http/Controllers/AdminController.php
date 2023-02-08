@@ -86,10 +86,10 @@ class AdminController extends Controller
 
     public function addelement(Request $request, iblock $iblock)
     {
-        $props = $iblock->getPropWithParrents(true);
+        $props = $iblock->getPropWithParents(true);
         $cProps = [];
         foreach ($props as $prop) {
-            $cProps[$prop->id] = $request->{$prop->id};
+            $cProps[$prop->name] = $request->{$prop->id};
         }
         $obj = ["name" => $request->name, "prop" => $cProps];
         Iblocks::addElement($obj, $iblock->id);

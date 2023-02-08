@@ -41,7 +41,8 @@ class LoadDump extends Command
     {
 
         $data = json_decode(file_get_contents('https://catalogloader.com/downloads/e/json_catalogloader.json'), 1);
-        /*
+        
+        
         $cc = [];
         foreach ($data["catalog"][0]["categories"] as $key => $value) {
         if (isset($value["parent_id"])) {
@@ -52,9 +53,8 @@ class LoadDump extends Command
         $cc[$value["id"]] = $id;
         }
         }
-        */
-
-        for ($i = 0; $i < 600; $i++) {
+        
+        
             foreach ($data["catalog"][1]["products"] as $key => $value) {
                 foreach ($data["catalog"][0]["categories"] as $key => $svalue) {
                     if ($svalue["id"] == $value["category_id"]) {
@@ -66,11 +66,8 @@ class LoadDump extends Command
                 foreach ($value["features"] as $q) {
                     $res[$q["name"]] = $q["value"];
                 }
-                $res["price"] = random_int(100, 999);
                 Iblocks::addElement(["name" => $value["name"], "prop" => $res], $iblockId);
             }
-        }
-
 
         return 0;
     }

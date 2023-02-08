@@ -40,8 +40,10 @@ class functions
                         $resParams["range"][$c[1]]["from"] = $cval[0];
                         $resParams["range"][$c[1]]["to"] = $cval[1];
                     } else {
-                        $filterItem = iblock_prop_value::where("slug", "=", $filterItem)->first();
-                        $resParams["param"][$filterItem->prop->id][] = $filterItem->id;
+                        $_slug = explode("_", $filterItem)[0];
+                        $filterItem = iblock_element::where("properties->" . $_slug . "->slug", "=", $filterItem)->first();
+                        
+                        $resParams["param"][$_slug][] = $filterItem->properties[$_slug]["slug"];
                     }
                 }
             }
