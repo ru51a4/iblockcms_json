@@ -48,9 +48,6 @@ class Iblocks
     {
         $res = [];
         $iblock = iblock::find($iblock);
-        $childs = $iblock->getParents()->map(function ($iblock) {
-            return $iblock->id;
-        });
         foreach (self::getPropsParents($iblock) as $c) {
             $res[] = $c;
         }
@@ -59,7 +56,7 @@ class Iblocks
             $allPropValue = [];
             if (!empty($allProps)) {
                 foreach ($allProps as $prop) {
-                    $els = iblock_element::whereIn("iblock_id", $childs)->where("properties->" . \Str::slug($prop->name) . "->value", "!=", "fuck")->groupBy("properties->" . \Str::slug($prop->name) . "->value")->get();
+                    $els = iblock_element::whereJsonLength("properties->" . \Str::slug($prop->name) . "->value",">",0)->groupBy("properties->" . \Str::slug($prop->name) . "->value")->get();
                     foreach ($els as $el) {
                         $allPropValue[$prop->id][] = $el->properties[\Str::slug($prop->name)];
                     }
