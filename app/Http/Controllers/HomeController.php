@@ -57,6 +57,22 @@ class HomeController extends Controller
         $allPropValue = $allProps["values"];
         $allProps = $allProps["res"];
 
+        foreach ($allProps as $prop) {
+            if ($prop->is_number) {
+                $max = 0;
+                $min = 0;
+                foreach ($allPropValue[\Str::slug($prop->name)] as $p) {
+                    if ($p < $min) {
+                        $min = $p;
+                    }
+                    if ($p > $max) {
+                        $max = $p;
+                    }
+                }
+                $prop->propvalue = ["min" => $min, "max" => $max];
+            }
+        }
+        
         //zhsmenu
         $zhsmenu = ["childrens" => []];
         $deep = function (&$c) use (&$deep) {

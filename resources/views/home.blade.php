@@ -48,14 +48,17 @@
                                     <ul>
                                         @if (isset($allPropValue[$prop->id]))
                                             @foreach ($allPropValue[$prop->id] as $value)
-                                                <li>
+                                            @foreach ($value["value"] as $cvalue)
+                                            
+                                            <li>
                                                     <div>
                                                         <input type="checkbox"
-                                                            {{ isset($resParams['param'][\Str::slug($prop->name)]) && in_array($value["slug"], $resParams['param'][\Str::slug($prop->name)]) ? 'checked' : '' }}
-                                                            value="{{$value["slug"]}}" name="prop_{{ $prop->id }}[]">
-                                                        <label for="scales">{{ $value["value"] }}</label>
+                                                            {{ isset($resParams['param'][\Str::slug($prop->name)]) && in_array(\Str::slug($prop->name)."_".\Str::slug($cvalue), $resParams['param'][\Str::slug($prop->name)]) ? 'checked' : '' }}
+                                                            value="{{\Str::slug($prop->name)."_".\Str::slug($cvalue)}}" name="prop_{{ $prop->id }}[]">
+                                                        <label for="scales">{{ $cvalue }}</label>
                                                     </div>
                                                 </li>
+                                                @endforeach
                                             @endforeach
                                         @endif
                                     </ul>

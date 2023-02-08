@@ -48,6 +48,9 @@ class Iblocks
     {
         $res = [];
         $iblock = iblock::find($iblock);
+        $ids = $iblock->getParents()->map(function ($item) {
+            return $item->id;
+        });
         foreach (self::getPropsParents($iblock) as $c) {
             $res[] = $c;
         }
@@ -56,7 +59,7 @@ class Iblocks
             $allPropValue = [];
             if (!empty($allProps)) {
                 foreach ($allProps as $prop) {
-                    $els = iblock_element::whereJsonLength("properties->" . \Str::slug($prop->name) . "->value",">",0)->groupBy("properties->" . \Str::slug($prop->name) . "->value")->get();
+                    $els = iblock_element::whereIn("iblock_id",$ids)->whereJsonLength("properties->" . \Str::slug($prop->name) . "->value", ">", 0)->groupBy("properties->" . \Str::slug($prop->name) . "->value")->get();
                     foreach ($els as $el) {
                         $allPropValue[$prop->id][] = $el->properties[\Str::slug($prop->name)];
                     }
@@ -114,14 +117,14 @@ class Iblocks
         if (isset($params["param"])) {
             foreach ($params["param"] as $id => $param) {
                 $els->where(function ($query) use ($param, $id) {
-                    $query->where("properties->" . $id . "->slug", "=", $param[0]);
+                    $query->WhereJsonContains("properties->" . $id . "->slug", $param[0]);
                     for ($i = 1; $i <= count($param) - 1; $i++) {
-                        $query->orWhere("properties->" . $id . "->slug", '=', $param[$i]);
+                        $query->orWhereJsonContains("properties->" . $id . "->slug", $param[$i]);
                     }
                 });
             }
         }
-        
+
         $count = $els->count();
         if ($page) {
             $els = $els->offset($itemPerPage * ($page - 1))->take($itemPerPage);
@@ -131,18 +134,14 @@ class Iblocks
             $t = $el->toArray();
             $t["prop"] = [];
             foreach (($el["properties"]) as $key => $item) {
-                $key = $item["prop_name"];
-                $item = $item["value"];
-                if (isset($t["prop"][$key])) {
-                    if (is_array($t["prop"][$key])) {
-                        $t["prop"][$key][] = $item;
-                    } else {
-                        $t["prop"][$key] = [$t["prop"][$key]];
-                        $t["prop"][$key][] = $item;
-                    }
+                if (count($item["value"]) > 1) {
+                    $key = $item["prop_name"];
+                    $item = $item["value"];
                 } else {
-                    $t["prop"][$key] = $item;
+                    $key = $item["prop_name"];
+                    $item = $item["value"][0];
                 }
+                $t["prop"][$key] = $item;
             }
             unset($t["properties"]);
             $res[] = $t;
@@ -194,18 +193,14 @@ class Iblocks
             $t = $el->toArray();
             $t["prop"] = [];
             foreach (($el["properties"]) as $key => $item) {
-                $key = $item["prop_name"];
-                $item = $item["value"];
-                if (isset($t["prop"][$key])) {
-                    if (is_array($t["prop"][$key])) {
-                        $t["prop"][$key][] = $item;
-                    } else {
-                        $t["prop"][$key] = [$t["prop"][$key]];
-                        $t["prop"][$key][] = $item;
-                    }
+                if (count($item["value"]) > 1) {
+                    $key = $item["prop_name"];
+                    $item = $item["value"];
                 } else {
-                    $t["prop"][$key] = $item;
+                    $key = $item["prop_name"];
+                    $item = $item["value"][0];
                 }
+                $t["prop"][$key] = $item;
             }
             unset($t["properties"]);
             $res[] = $t;
@@ -259,15 +254,18 @@ class Iblocks
             if (is_array($obj["prop"][$id])) {
                 $properties = [];
                 foreach ($obj["prop"][$id] as $item) {
-                    $properties[$prop->slug][] = $item;
+                    $pp[] = $item;
+                    $pslug[] = \Str::slug($prop->name) . "_" . \Str::slug($item);
                 }
+                $properties[\Str::slug($prop->name)] = ["prop_name" => $prop->name, "prop" => $prop->id, "value" => $pp, "slug" => $pslug];
+
                 $pp = ($el->properties);
                 foreach ($pp as $key => $item) {
                     $properties[$key] = $item;
                 }
                 $el->properties = ($properties);
             } else {
-                $properties[\Str::slug($prop->name)] = ["prop_name" => $prop->name, "prop" => $prop->id, "value" => $obj["prop"][$id], "slug" => \Str::slug($prop->name) . "_" . \Str::slug($obj["prop"][$id])];
+                $properties[\Str::slug($prop->name)] = ["prop_name" => $prop->name, "prop" => $prop->id, "value" => [$obj["prop"][$id]], "slug" => [\Str::slug($prop->name) . "_" . \Str::slug($obj["prop"][$id])]];
                 $pp = ($el->properties);
                 foreach ($pp as $key => $item) {
                     $properties[$key] = $item;

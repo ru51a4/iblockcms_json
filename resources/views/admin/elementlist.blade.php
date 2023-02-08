@@ -39,10 +39,12 @@
                         <a href="#">
                             <h5 class="card-title">{{ $el->name }}</h5>
                             <ul>
-                                @foreach (json_decode($el->properties, true) as $prop)
+                                @foreach (($el->properties) as $key =>$prop)
+                                    @foreach ($prop["value"] as $p)
                                     <li>
-                                        {{ $prop['key'] }} - {{ $prop['value'] }}
-                                    </li>
+                                        {{ $prop["prop_name"] }} - {{ $p }}
+                                    </li>     
+                                    @endforeach
                                 @endforeach
                             </ul>
                         </a>

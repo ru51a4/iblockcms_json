@@ -41,9 +41,8 @@ class functions
                         $resParams["range"][$c[1]]["to"] = $cval[1];
                     } else {
                         $_slug = explode("_", $filterItem)[0];
-                        $filterItem = iblock_element::where("properties->" . $_slug . "->slug", "=", $filterItem)->first();
-                        
-                        $resParams["param"][$_slug][] = $filterItem->properties[$_slug]["slug"];
+                        $__slug = $filterItem;
+                        $resParams["param"][$_slug][] = $__slug;
                     }
                 }
             }
