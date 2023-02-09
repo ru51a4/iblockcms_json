@@ -46,20 +46,61 @@
                                 <li>
                                     {{ $prop->name }}
                                     <ul>
-                                        @if (isset($allPropValue[$prop->id]))
-                                            @foreach ($allPropValue[$prop->id] as $value)
-                                            @foreach ($value["value"] as $cvalue)
-                                            
-                                            <li>
-                                                    <div>
-                                                        <input type="checkbox"
-                                                            {{ isset($resParams['param'][\Str::slug($prop->name)]) && in_array(\Str::slug($prop->name)."_".\Str::slug($cvalue), $resParams['param'][\Str::slug($prop->name)]) ? 'checked' : '' }}
-                                                            value="{{\Str::slug($prop->name)."_".\Str::slug($cvalue)}}" name="prop_{{ $prop->id }}[]">
-                                                        <label for="scales">{{ $cvalue }}</label>
-                                                    </div>
-                                                </li>
+                                        @if ($prop->is_number)
+                                            @if (isset($resParams['range'][$prop->id]))
+                                                <input type="text" class="dirty js-range-slider"
+                                                    name="range_{{ \Str::slug($prop->name) }}" value="" />
+                                            @else
+                                                <input type="text" class="js-range-slider"
+                                                    name="range_{{ \Str::slug($prop->name) }}" value="" />
+                                            @endif
+                                            @if (isset($resParams['range'][\Str::slug($prop->name)]))
+                                                <script>
+                                                    $("[name=range_{{ \Str::slug($prop->name) }}]").ionRangeSlider({
+                                                        type: "double",
+                                                        grid: true,
+                                                        min: {{ $prop->propvalue['min'] }},
+                                                        max: {{ $prop->propvalue['max'] }},
+                                                        from: {{ $resParams['range'][\Str::slug($prop->name)]['from'] }},
+                                                        to: {{ $resParams['range'][\Str::slug($prop->name)]['to'] }},
+                                                        onChange: (e) => {
+                                                            e.input[0].classList.add("dirty");
+                                                        },
+                                                        prefix: "",
+                                                    });
+                                                </script>
+                                            @else
+                                                <script>
+                                                    $("[name=range_{{ \Str::slug($prop->name) }}]").ionRangeSlider({
+                                                        type: "double",
+                                                        grid: true,
+                                                        min: {{ $prop->propvalue['min'] }},
+                                                        max: {{ $prop->propvalue['max'] }},
+                                                        from: {{ $prop->propvalue['min'] }},
+                                                        to: {{ $prop->propvalue['max'] }},
+                                                        onChange: (e) => {
+                                                            e.input[0].classList.add("dirty");
+                                                        },
+                                                        prefix: "",
+                                                    });
+                                                </script>
+                                            @endif
+                                        @else
+                                            @if (isset($allPropValue[$prop->id]))
+                                                @foreach ($allPropValue[$prop->id] as $value)
+                                                    @foreach ($value['value'] as $cvalue)
+                                                        <li>
+                                                            <div>
+                                                                <input type="checkbox"
+                                                                    {{ isset($resParams['param'][\Str::slug($prop->name)]) && in_array(\Str::slug($prop->name) . '_' . \Str::slug($cvalue), $resParams['param'][\Str::slug($prop->name)]) ? 'checked' : '' }}
+                                                                    value="{{ \Str::slug($prop->name) . '_' . \Str::slug($cvalue) }}"
+                                                                    name="prop_{{ $prop->id }}[]">
+                                                                <label for="scales">{{ $cvalue }}</label>
+                                                            </div>
+                                                        </li>
+                                                    @endforeach
                                                 @endforeach
-                                            @endforeach
+                                            @endif
                                         @endif
                                     </ul>
                                 </li>

@@ -59,7 +59,7 @@ class Iblocks
             $allPropValue = [];
             if (!empty($allProps)) {
                 foreach ($allProps as $prop) {
-                    $els = iblock_element::whereIn("iblock_id",$ids)->whereJsonLength("properties->" . \Str::slug($prop->name) . "->value", ">", 0)->groupBy("properties->" . \Str::slug($prop->name) . "->value")->get();
+                    $els = iblock_element::whereIn("iblock_id", $ids)->whereJsonLength("properties->" . \Str::slug($prop->name) . "->value", ">", 0)->groupBy("properties->" . \Str::slug($prop->name) . "->value")->get();
                     foreach ($els as $el) {
                         $allPropValue[$prop->id][] = $el->properties[\Str::slug($prop->name)];
                     }
@@ -109,18 +109,26 @@ class Iblocks
         }
         if ($where) {
             foreach ($where as $cond) {
-                $els->where('properties->key', '=', $cond["prop"])
-                    ->where("properties->value", $cond["type"], $cond["value"]);
+                $els->WhereJsonContains('properties->' . $cond["prop"] . '->value', $cond["value"]);
             }
         }
 
         if (isset($params["param"])) {
-            foreach ($params["param"] as $id => $param) {
-                $els->where(function ($query) use ($param, $id) {
-                    $query->WhereJsonContains("properties->" . $id . "->slug", $param[0]);
+            foreach ($params["param"] as $slug => $param) {
+                $els->where(function ($query) use ($param, $slug) {
+                    $query->WhereJsonContains("properties->" . $slug . "->slug", $param[0]);
                     for ($i = 1; $i <= count($param) - 1; $i++) {
-                        $query->orWhereJsonContains("properties->" . $id . "->slug", $param[$i]);
+                        $query->orWhereJsonContains("properties->" . $slug . "->slug", $param[$i]);
                     }
+                });
+            }
+        }
+
+        if (isset($params["range"])) {
+            foreach ($params["range"] as $slug => $param) {
+                $els->where(function ($query) use ($param, $slug) {
+                    $query->where("properties->" . $slug . "->value", ">=", $param["from"]);
+                    $query->where("properties->" . $slug . "->value", "<=", $param["to"]);
                 });
             }
         }
@@ -134,7 +142,7 @@ class Iblocks
             $t = $el->toArray();
             $t["prop"] = [];
             foreach (($el["properties"]) as $key => $item) {
-                if (count($item["value"]) > 1) {
+                if (!is_array($item["value"]) || count($item["value"]) > 1) {
                     $key = $item["prop_name"];
                     $item = $item["value"];
                 } else {
@@ -222,6 +230,7 @@ class Iblocks
         $el->slug = \Str::slug($obj["name"]);
         $el->iblock_id = $iblockId;
         $el->properties = [];
+        $_props = [];
         foreach ($obj["prop"] as $id => $prop) {
             if (empty($prop)) {
                 continue;
@@ -252,28 +261,20 @@ class Iblocks
             }
             //multy shit
             if (is_array($obj["prop"][$id])) {
-                $properties = [];
                 foreach ($obj["prop"][$id] as $item) {
                     $pp[] = $item;
                     $pslug[] = \Str::slug($prop->name) . "_" . \Str::slug($item);
                 }
-                $properties[\Str::slug($prop->name)] = ["prop_name" => $prop->name, "prop" => $prop->id, "value" => $pp, "slug" => $pslug];
-
-                $pp = ($el->properties);
-                foreach ($pp as $key => $item) {
-                    $properties[$key] = $item;
-                }
-                $el->properties = ($properties);
+                $_props[\Str::slug($prop->name)] = ["prop_name" => $prop->name, "prop" => $prop->id, "value" => $pp, "slug" => $pslug];
             } else {
-                $properties[\Str::slug($prop->name)] = ["prop_name" => $prop->name, "prop" => $prop->id, "value" => [$obj["prop"][$id]], "slug" => [\Str::slug($prop->name) . "_" . \Str::slug($obj["prop"][$id])]];
-                $pp = ($el->properties);
-                foreach ($pp as $key => $item) {
-                    $properties[$key] = $item;
+                if ($prop->is_number) {
+                    $_props[\Str::slug($prop->name)] = ["prop_name" => $prop->name, "prop" => $prop->id, "value" => $obj["prop"][$id], "slug" => [\Str::slug($prop->name) . "_" . \Str::slug($obj["prop"][$id])]];
+                } else {
+                    $_props[\Str::slug($prop->name)] = ["prop_name" => $prop->name, "prop" => $prop->id, "value" => [$obj["prop"][$id]], "slug" => [\Str::slug($prop->name) . "_" . \Str::slug($obj["prop"][$id])]];
                 }
-                $el->properties = ($properties);
             }
         }
-
+        $el->properties = $_props;
         $el->save();
     }
 

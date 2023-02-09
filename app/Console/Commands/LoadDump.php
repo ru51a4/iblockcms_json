@@ -66,8 +66,12 @@ class LoadDump extends Command
                 foreach ($value["features"] as $q) {
                     $res[$q["name"]] = $q["value"];
                 }
+                $res["price"] = random_int(100, 999);
                 Iblocks::addElement(["name" => $value["name"], "prop" => $res], $iblockId);
             }
+        
+        
+
 
         return 0;
     }

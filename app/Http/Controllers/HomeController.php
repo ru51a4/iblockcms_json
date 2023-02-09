@@ -56,12 +56,12 @@ class HomeController extends Controller
         $allProps = Iblocks::getAllProps($id, true);
         $allPropValue = $allProps["values"];
         $allProps = $allProps["res"];
-
         foreach ($allProps as $prop) {
             if ($prop->is_number) {
                 $max = 0;
                 $min = 0;
-                foreach ($allPropValue[\Str::slug($prop->name)] as $p) {
+                foreach ($allPropValue[$prop->id] as $p) {
+                    $p = $p["value"];
                     if ($p < $min) {
                         $min = $p;
                     }
