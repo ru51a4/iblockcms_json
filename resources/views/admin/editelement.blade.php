@@ -23,27 +23,62 @@
             </ul>
             <div class="tab-content" id="pills-tabContent">
                 <div class="tab-pane fade show active" id="pills-home" role="tabpanel" aria-labelledby="pills-home-tab">
-                    @foreach ($resProp as $key => $value)
-                        <div class="form-group">
-                            <label>{{ $key }}</label>
-                            @if($props[\Str::slug($key)]->is_multy)
-                            <div class="d-flex flex-column multy-{{$props[\Str::slug($key)]->id}}">
-                                @foreach($value as $id => $p)
-                                <input type="text" name="{{\Str::slug($key)}}[]" value="{{$p}}">
-                                @endforeach
-                                <span onclick="add('{{\Str::slug($key)}}', event)">add</span>
+                    @foreach ($props as $prop)
+                        @if ($prop->iblock_id != 1)
+                            <div class="form-group">
+                                <label>{{ $prop->name }}</label>
+                                @if ($prop->is_multy)
+                                    <div class="d-flex flex-column multy-{{ $prop->id }}">
+                                        @if (!empty($resProp[\Str::slug($prop->name)]))
+                                            @foreach ($resProp[\Str::slug($prop->name)] as $id => $p)
+                                                <input type="text" name="{{ \Str::slug($prop->name) }}[]"
+                                                    value="{{ $p }}">
+                                            @endforeach
+                                        @endif
+                                        <span onclick="add('{{ \Str::slug($prop->name) }}', event)">add</span>
+                                    </div>
+                                @else
+                                    <div class="d-flex flex-column">
+                                        @if (!empty($resProp[\Str::slug($prop->name)]))
+                                            <input type="text" name="{{ \Str::slug($prop->name) }}[]"
+                                                value="{{ $resProp[\Str::slug($prop->name)] }}">
+                                        @else
+                                            <input type="text" name="{{ \Str::slug($prop->name) }}[]" value="">
+                                        @endif
+                                    </div>
+                                @endif
                             </div>
-                            @else
-                            <div class="d-flex flex-column">
-                                <input type="text" name="{{ \Str::slug($key) }}[]" value="{{ $value }}">
-                            </div>
-                            @endif
-
-                        </div>
+                        @endif
                     @endforeach
                 </div>
                 <div class="tab-pane fade" id="pills-profile" role="tabpanel" aria-labelledby="pills-profile-tab">
-
+                    @foreach ($props as $prop)
+                        @if ($prop->iblock_id == 1)
+                            <div class="form-group">
+                                <label>{{ $prop->name }}</label>
+                                @if ($prop->is_multy)
+                                    <div class="d-flex flex-column multy-{{ $prop->id }}">
+                                        @if (!empty($resProp[\Str::slug($prop->name)]))
+                                            @foreach ($resProp[\Str::slug($prop->name)] as $id => $p)
+                                                <input type="text" name="{{ \Str::slug($prop->name) }}[]"
+                                                    value="{{ $p }}">
+                                            @endforeach
+                                        @endif
+                                        <span onclick="add('{{ \Str::slug($prop->name) }}', event)">add</span>
+                                    </div>
+                                @else
+                                    <div class="d-flex flex-column">
+                                        @if (!empty($resProp[\Str::slug($prop->name)]))
+                                            <input type="text" name="{{ \Str::slug($prop->name) }}[]"
+                                                value="{{ $resProp[\Str::slug($prop->name)] }}">
+                                        @else
+                                            <input type="text" name="{{ \Str::slug($prop->name) }}[]" value="">
+                                        @endif
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
+                    @endforeach
                 </div>
             </div>
             <button class="btn btn-primary">edit</button>

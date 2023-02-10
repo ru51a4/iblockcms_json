@@ -107,11 +107,17 @@ class AdminController extends Controller
     public function editelementform(iblock_element $iblock_element)
     {
 
-        $props = $iblock_element->iblock->getPropWithParents();
-        foreach ($props as $prop) {
+        $_props = $iblock_element->iblock->getPropWithParents();
+        $props = [];
+        foreach ($_props as $prop) {
             $props[\Str::slug($prop->name)] = $prop;
         }
         $resProp = Iblocks::ElementsGetList([$iblock_element->id])[0]["prop"];
+        $cProps = [];
+        foreach ($resProp as $name => $prop) {
+            $cProps[\Str::slug($name)] = $prop; 
+        }
+        $resProp = $cProps;
         return view('admin/editelement', compact("iblock_element", "props", "resProp"));
     }
 
