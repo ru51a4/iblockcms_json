@@ -201,7 +201,7 @@ class Iblocks
             $t = $el->toArray();
             $t["prop"] = [];
             foreach (($el["properties"]) as $key => $item) {
-                if (count($item["value"]) > 1) {
+                if (!is_array($item["value"]) || count($item["value"]) > 1) {
                     $key = $item["prop_name"];
                     $item = $item["value"];
                 } else {
@@ -294,44 +294,34 @@ class Iblocks
      */
     public static function updateElement($props, $elId)
     {
+        $el = iblock_element::where("id", "=", $elId)->first();
+        $el->properties = [];
+        $_props = [];
         foreach ($props as $key => $p) {
             $p = iblock_property::where("name", "=", $key)->first();
             if (isset($props[$p->name])) {
-                iblock_prop_value::where("el_id", "=", $elId)->where("prop_id", "=", $p->id)->delete();
                 if (is_array($props[$p->name])) {
-                    $count = 0;
+                    $_slug = [];
+                    $_values = [];
                     foreach ($props[$p->name] as $item) {
                         if (empty($item)) {
                             continue;
                         }
-                        $c = new iblock_prop_value();
-                        $c->el_id = $elId;
-                        $c->prop_id = $p->id;
-                        $c->slug = \Str::slug($p->name . "-" . $item);
-                        $c->value_id = ++$count;
-                        if ($p->is_number) {
-                            $c->value_number = (integer) $item;
-                        } else {
-                            $c->value = $item;
-                        }
-                        $c->save();
+                        $_values[] = $item;
+                        $_slug[] = \Str::slug($p->name) . "_" . \Str::slug($item);
                     }
+                    $_props[\Str::slug($p->name)] = ["prop_name" => $p->name, "prop" => $p->id, "value" => $_values, "slug" => $_slug];
                 } else {
-                    $count = 0;
-                    $c = new iblock_prop_value();
-                    $c->el_id = $elId;
-                    $c->prop_id = $p->id;
-                    $c->slug = \Str::slug($p->name . "-" . $item);
-                    $c->value_id = ++$count;
                     if ($p->is_number) {
-                        $c->value_number = (integer) $props[$p->name];
+                        $_props[\Str::slug($p->name)] = ["prop_name" => $p->name, "prop" => $p->id, "value" => $props[$p->name], "slug" => [\Str::slug($p->name) . "_" . \Str::slug($props[$p->name])]];
                     } else {
-                        $c->value = $props[$p->name];
+                        $_props[\Str::slug($p->name)] = ["prop_name" => $p->name, "prop" => $p->id, "value" => [$props[$p->name]], "slug" => [\Str::slug($p->name) . "_" . \Str::slug($props[$p->name])]];
                     }
-                    $c->save();
                 }
             }
         }
+        $el->properties = $_props;
+        $el->save();
     }
 
     public static function treeToArray($tree)

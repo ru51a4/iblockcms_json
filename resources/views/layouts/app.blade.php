@@ -191,7 +191,8 @@
     </header>
     @yield('content')
     <footer class="pt-3 text-muted border-top">
-        superwebteam &copy; 2022
+        This page took {{ (microtime(true) - LARAVEL_START) }} seconds to render
+
     </footer>
 </div>
 </body>

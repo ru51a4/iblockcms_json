@@ -107,37 +107,25 @@ class AdminController extends Controller
     public function editelementform(iblock_element $iblock_element)
     {
 
-        $props = $iblock_element->iblock->getPropWithParents(true);
-
-        $resProp = [];
-
+        $props = $iblock_element->iblock->getPropWithParents();
         foreach ($props as $prop) {
-            $t = $prop->toArray();
-            $cProp = iblock_prop_value::where("el_id", "=", $iblock_element->id)->where("prop_id", "=", $prop->id)->get()->toArray();
-            foreach ($cProp as $k) {
-                if ($prop->is_number) {
-                    $t["value"][$k["value_id"]] = (isset($k["value_number"])) ? $k["value_number"] : "";
-                } else {
-                    $t["value"][$k["value_id"]] = (isset($k["value"])) ? $k["value"] : "";
-                }
-            }
-            $resProp[] = $t;
+            $props[\Str::slug($prop->name)] = $prop;
         }
-
-        return view('admin/editelement', compact("iblock_element", "resProp"));
+        $resProp = Iblocks::ElementsGetList([$iblock_element->id])[0]["prop"];
+        return view('admin/editelement', compact("iblock_element", "props", "resProp"));
     }
 
     public function editelement(iblock_element $iblock_element, Request $request)
     {
         $iblock_element->name = $request->name;
-        $props = $iblock_element->iblock->getPropWithParrents();
+        $props = $iblock_element->iblock->getPropWithParents();
         $iblock_element->update();
         $c = [];
         foreach ($props as $p) {
-            if (empty($request->{$p->id})) {
+            if (empty($request->{\Str::slug($p->name)})) {
                 continue;
             }
-            $c[$p->name] = $request->{$p->id};
+            $c[$p->name] = $request->{\Str::slug($p->name)};
         }
         Iblocks::updateElement($c, $iblock_element->id);
         return redirect("/admin/" . $iblock_element->iblock_id . "/elementlist");

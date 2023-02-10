@@ -39,12 +39,18 @@
                         <a href="#">
                             <h5 class="card-title">{{ $el->name }}</h5>
                             <ul>
-                                @foreach (($el->properties) as $key =>$prop)
-                                    @foreach ($prop["value"] as $p)
-                                    <li>
-                                        {{ $prop["prop_name"] }} - {{ $p }}
-                                    </li>     
-                                    @endforeach
+                                @foreach ($el->properties as $key => $prop)
+                                    @if (is_array($prop['value']))
+                                        @foreach ($prop['value'] as $p)
+                                            <li>
+                                                {{ $prop['prop_name'] }} - {{ $p }}
+                                            </li>
+                                        @endforeach
+                                    @else
+                                        <li>
+                                            {{ $prop['prop_name'] }} - {{ $prop['value'] }}
+                                        </li>
+                                    @endif
                                 @endforeach
                             </ul>
                         </a>
