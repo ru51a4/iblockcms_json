@@ -127,8 +127,8 @@ class Iblocks
         if (isset($params["range"])) {
             foreach ($params["range"] as $slug => $param) {
                 $els->where(function ($query) use ($param, $slug) {
-                    $query->where("properties->" . $slug . "->value", ">=", $param["from"]);
-                    $query->where("properties->" . $slug . "->value", "<=", $param["to"]);
+                    $query->where("properties->" . $slug . "->value", ">=", (integer)$param["from"]);
+                    $query->where("properties->" . $slug . "->value", "<=", (integer)$param["to"]);
                 });
             }
         }

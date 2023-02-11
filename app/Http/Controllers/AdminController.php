@@ -115,7 +115,7 @@ class AdminController extends Controller
         $resProp = Iblocks::ElementsGetList([$iblock_element->id])[0]["prop"];
         $cProps = [];
         foreach ($resProp as $name => $prop) {
-            $cProps[\Str::slug($name)] = $prop; 
+            $cProps[\Str::slug($name)] = $prop;
         }
         $resProp = $cProps;
         return view('admin/editelement', compact("iblock_element", "props", "resProp"));
@@ -131,7 +131,11 @@ class AdminController extends Controller
             if (empty($request->{\Str::slug($p->name)})) {
                 continue;
             }
-            $c[$p->name] = $request->{\Str::slug($p->name)};
+            if (count($request->{\Str::slug($p->name)}) == 1) {
+                $c[$p->name] = $request->{\Str::slug($p->name)}[0];
+            } else {
+                $c[$p->name] = $request->{\Str::slug($p->name)};
+            }
         }
         Iblocks::updateElement($c, $iblock_element->id);
         return redirect("/admin/" . $iblock_element->iblock_id . "/elementlist");
