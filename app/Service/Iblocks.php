@@ -59,9 +59,20 @@ class Iblocks
             $allPropValue = [];
             if (!empty($allProps)) {
                 foreach ($allProps as $prop) {
+                    $c = [];
                     $els = iblock_element::whereIn("iblock_id", $ids)->whereJsonLength("properties->" . \Str::slug($prop->name) . "->value", ">", 0)->groupBy("properties->" . \Str::slug($prop->name) . "->value")->get();
                     foreach ($els as $el) {
-                        $allPropValue[$prop->id][] = $el->properties[\Str::slug($prop->name)];
+                        $cc = $el->properties[\Str::slug($prop->name)];
+                        if (is_array($el->properties[\Str::slug($prop->name)]["value"])) {
+                            $cc["value"] = [];
+                            foreach ($el->properties[\Str::slug($prop->name)]["value"] as $item) {
+                                if (empty($c[$item])) {
+                                    $c[$item] = true;
+                                    $cc["value"][] = $item;
+                                }
+                            }
+                        }
+                        $allPropValue[$prop->id][] = $cc;
                     }
                 }
             }
@@ -127,8 +138,8 @@ class Iblocks
         if (isset($params["range"])) {
             foreach ($params["range"] as $slug => $param) {
                 $els->where(function ($query) use ($param, $slug) {
-                    $query->where("properties->" . $slug . "->value", ">=", (integer)$param["from"]);
-                    $query->where("properties->" . $slug . "->value", "<=", (integer)$param["to"]);
+                    $query->where("properties->" . $slug . "->value", ">=", (integer) $param["from"]);
+                    $query->where("properties->" . $slug . "->value", "<=", (integer) $param["to"]);
                 });
             }
         }
